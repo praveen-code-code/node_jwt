@@ -100,4 +100,58 @@ app.post("/create_task", authenticateToken , async (req,res) => {
         return res.status(500).json({ message: "Server error" });
     }
 });
+
+app.get('/todos', authenticateToken, async (req, res) => {
+    try {
+        const todos = await ToDo.find({ userId: req.user.userId }).sort({ createdAt: -1 }); 
+        return res.status(200).json({
+            message: 'Todos fetched successfully',
+            todos
+        });
+    } catch (err) {
+        console.error('Todo fetch error:', err);
+        return res.status(500).json({ 'message': 'Server Error' });
+    }
+});
+
+app.put('/todo/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description } = req.body;
+        const todo = await ToDo.findOne({ _id: id, userId: req.user.userId });
+        if (!todo) {
+            return res.status(404).json({ 'message': 'Todo not found or access denied' });
+        }
+        todo.title = title || todo.title;
+        todo.description = description || todo.description;
+        await todo.save();
+        return res.status(200).json({
+            message: 'Todo updated successfully',
+            todo
+        });
+    } catch (err) {
+        console.error('Todo update error:', err);
+        return res.status(500).json({ 'message': 'Server Error' });
+    }
+});
+
+
+app.delete('/todo/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const todo = await ToDo.findOneAndDelete({ _id: id, userId: req.user.userId });
+        if (!todo) {
+            return res.status(404).json({ 'message': 'Todo not found or access denied' });
+        }
+        return res.status(200).json({
+            message: 'Todo deleted successfully',
+            todo
+        });
+    } catch (err) {
+        console.error('Todo delete error:', err);
+        return res.status(500).json({ 'message': 'Server Error' });
+    }
+});
+
+
 app.listen(3000, () => console.log("server is running on localhost 3000..."));
